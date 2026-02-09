@@ -1,466 +1,622 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Noble OneAI</title>
+    <title>Noble OneAI | Super Agent</title>
+    
+    <!-- SDKs -->
     <script src="https://js.puter.com/v2/"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono&display=swap" rel="stylesheet">
-    <!-- Icons -->
+    
+    <!-- Typography & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- Markdown & Latex -->
+    
+    <!-- Markdown, Code, & LaTeX -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark-dimmed.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
-    <!-- Highlight.js -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/tokyo-night-dark.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
 
     <style>
-        body { background-color: #09090b; color: #e4e4e7; font-family: 'Georgia', serif; }
-        .font-georgia { font-family: 'Georgia', serif; }
-        .font-roboto { font-family: 'Roboto Mono', monospace; }
-        
-        /* Glassmorphism */
-        .glass {
-            background: rgba(24, 24, 27, 0.7);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+        :root {
+            --glass-bg: rgba(15, 15, 20, 0.85);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --accent-gradient: linear-gradient(135deg, #60a5fa 0%, #c084fc 100%);
         }
 
-        .welcome-gradient {
-            background: linear-gradient(135deg, #60a5fa, #c084fc);
+        body {
+            background-color: #0c0c0e;
+            color: #ececec;
+            font-family: 'Georgia', serif;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .font-georgia { font-family: 'Georgia', serif; }
+        .font-roboto { font-family: 'Roboto Mono', monospace !important; }
+        .font-sans { font-family: 'Inter', sans-serif; }
+
+        /* Welcome Gradient */
+        .welcome-text {
+            background: var(--accent-gradient);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0 0 10px rgba(192, 132, 252, 0.3));
+            font-weight: 800;
+            filter: drop-shadow(0 0 15px rgba(96, 165, 250, 0.2));
         }
 
-        /* Sidebar Scrollbar */
-        ::-webkit-scrollbar { width: 5px; }
+        /* Glassmorphism Components */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+        }
+
+        .sidebar-item {
+            transition: all 0.2s ease;
+            border-radius: 8px;
+            margin: 2px 0;
+        }
+
+        .sidebar-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .active-chat {
+            background: rgba(96, 165, 250, 0.1) !important;
+            border-left: 3px solid #60a5fa;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
 
-        /* Textbox Styling */
-        #chat-input {
-            min-height: 80px;
-            max-height: 400px;
+        /* Chat Input Box */
+        #chat-input-container {
+            transition: box-shadow 0.3s ease;
         }
 
-        /* Code Block Copy Button */
-        .code-container { position: relative; }
-        .copy-btn {
+        #chat-input-container:focus-within {
+            box-shadow: 0 0 20px rgba(96, 165, 250, 0.15);
+            border-color: rgba(96, 165, 250, 0.4);
+        }
+
+        /* Code Block Styling */
+        pre {
+            background: #1a1b26 !important;
+            border-radius: 12px;
+            padding: 1.5rem !important;
+            position: relative;
+            margin: 1.5rem 0;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .code-header {
             position: absolute;
-            top: 0.5rem;
-            right: 0.5rem;
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
-        .code-container:hover .copy-btn { opacity: 1; }
-
-        #auth-overlay {
-            position: fixed;
-            inset: 0;
-            z-index: 9999;
-            background: #09090b;
+            top: 0;
+            right: 0;
             display: flex;
-            align-items: center;
-            justify-content: center;
+            gap: 8px;
+            padding: 8px;
+        }
+
+        /* Animation */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .message-anim { animation: fadeIn 0.4s ease-out forwards; }
+
+        #auth-screen {
+            background: radial-gradient(circle at center, #1a1a2e 0%, #0c0c0e 100%);
+        }
+
+        .folder-content {
+            margin-left: 1rem;
+            border-left: 1px solid rgba(255,255,255,0.1);
+            padding-left: 0.5rem;
         }
     </style>
 </head>
-<body class="h-screen flex overflow-hidden">
+<body class="h-screen flex">
 
-    <!-- Auth Overlay -->
-    <div id="auth-overlay">
-        <div class="glass p-8 rounded-2xl w-80 text-center space-y-4">
-            <h2 class="text-2xl font-bold mb-4">Noble OneAI</h2>
-            <input type="password" id="pincode-input" placeholder="Enter PIN" class="w-full bg-zinc-900 border border-zinc-700 p-3 rounded-lg text-center outline-none focus:border-blue-500">
-            <button onclick="checkPin()" class="w-full bg-blue-600 hover:bg-blue-700 p-2 rounded-lg transition">Enter</button>
-            <button onclick="alert('Hint: 6-digit PIN starts with 39...')" class="text-xs text-zinc-500 underline">pincode hint</button>
+    <!-- Auth Layer -->
+    <div id="auth-screen" class="fixed inset-0 z-[100] flex items-center justify-center">
+        <div class="glass-panel p-10 rounded-3xl w-full max-w-md text-center space-y-6">
+            <h1 class="text-3xl font-bold welcome-text">Noble OneAI</h1>
+            <p class="text-zinc-500 font-sans text-sm">Access Restricted. Enter Credentials.</p>
+            <input type="password" id="pin-input" placeholder="••••••" class="w-full bg-black/40 border border-zinc-800 p-4 rounded-xl text-center text-2xl tracking-widest focus:outline-none focus:border-blue-500">
+            <button onclick="verifyPin()" class="w-full py-4 bg-white text-black font-bold rounded-xl hover:bg-zinc-200 transition-all font-sans">Verify Identity</button>
+            <button onclick="alert('Hint: 6 digits starting with 39...')" class="text-xs text-zinc-600 hover:text-zinc-400 font-sans uppercase tracking-tighter">Request Hint</button>
         </div>
     </div>
 
     <!-- Sidebar -->
-    <aside id="sidebar" class="w-72 glass h-full flex flex-col transition-all duration-300 relative shrink-0">
-        <div class="p-4 border-b border-zinc-800 flex justify-between items-center">
-            <h1 class="text-xl font-bold welcome-gradient">Noble OneAI</h1>
-            <button onclick="createNewChat()" class="p-1.5 hover:bg-zinc-800 rounded-lg"><i data-lucide="plus-circle"></i></button>
-        </div>
-        
-        <!-- Folder/Chat Management -->
-        <div id="chat-library" class="flex-1 overflow-y-auto p-4 space-y-2">
-            <div id="folders-container"></div>
-            <div id="chats-container"></div>
+    <aside id="sidebar" class="w-80 glass-panel h-full flex flex-col z-50 shrink-0">
+        <div class="p-6 border-b border-zinc-800 flex justify-between items-center">
+            <div>
+                <h2 class="font-sans font-bold text-lg leading-tight">Noble OneAI</h2>
+                <span class="text-[10px] text-blue-400 uppercase tracking-widest font-sans">Super Agent Interface</span>
+            </div>
+            <div class="flex gap-1">
+                <button onclick="createFolder()" title="New Folder" class="p-2 hover:bg-zinc-800 rounded-lg text-zinc-400"><i data-lucide="folder-plus" class="w-4"></i></button>
+                <button onclick="createNewChat()" title="New Chat" class="p-2 bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 rounded-lg"><i data-lucide="plus" class="w-4"></i></button>
+            </div>
         </div>
 
-        <div class="p-4 border-t border-zinc-800 text-xs text-zinc-500">
-            Puter.js Integrated System
+        <div id="sidebar-content" class="flex-1 overflow-y-auto p-4 space-y-4 font-sans text-sm">
+            <!-- Folders and Chats will be injected here -->
+        </div>
+
+        <div class="p-4 border-t border-zinc-800 flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center font-bold text-xs">N</div>
+            <div class="flex-1 overflow-hidden">
+                <p class="truncate font-bold text-sm">Nikhil</p>
+                <p class="text-[10px] text-zinc-500 truncate">Professional Edition</p>
+            </div>
+            <button onclick="location.reload()" class="text-zinc-500 hover:text-white"><i data-lucide="refresh-cw" class="w-4"></i></button>
         </div>
     </aside>
 
-    <!-- Main Content -->
-    <main class="flex-1 flex flex-col relative h-full">
-        <!-- Top Bar -->
-        <header class="glass h-16 flex items-center justify-between px-6 z-10">
-            <button onclick="toggleSidebar()" class="p-2 hover:bg-zinc-800 rounded-lg">
-                <i data-lucide="menu"></i>
-            </button>
-            
+    <!-- Main View -->
+    <main class="flex-1 flex flex-col relative bg-[#0c0c0e]">
+        
+        <!-- Navbar -->
+        <nav class="h-16 glass-panel flex items-center justify-between px-8 border-b border-zinc-900 z-40">
             <div class="flex items-center gap-4">
-                <select id="model-selector" class="bg-zinc-900 border border-zinc-700 text-sm p-2 rounded-lg outline-none focus:ring-1 ring-blue-500">
-                    <option value="google/gemini-1.5-pro-preview-0514" selected>Normal Chat (Gemini Pro)</option>
-                    <option value="claude-3-5-sonnet">Code Generation (Claude 3.5)</option>
-                    <option value="black-forest-labs/FLUX.1-pro">Image Gen (FLUX.1.1)</option>
-                    <option value="ByteDance/Seedance-1.0-pro">Video Gen (Seedance)</option>
-                    <option value="claude-3-opus">Creative Writing (Opus)</option>
-                    <option value="perplexity/sonar-deep-research">Scientific Research (Perplexity)</option>
-                    <option value="gpt-4o-transcribe-diarize">Transcribe (Speech to Text)</option>
+                <button onclick="toggleSidebar()" class="text-zinc-500 hover:text-white"><i data-lucide="sidebar" class="w-5"></i></button>
+                <div class="h-4 w-[1px] bg-zinc-800"></div>
+                <select id="model-select" class="bg-transparent text-zinc-300 text-sm focus:outline-none cursor-pointer font-sans">
+                    <option value="google/gemini-1.5-pro-preview-0514">Normal Chat: Gemini 1.5 Pro</option>
+                    <option value="claude-3-5-sonnet">Coding: Claude 3.5 Sonnet</option>
+                    <option value="black-forest-labs/FLUX.1-pro">Image: FLUX.1.1 Pro</option>
+                    <option value="ByteDance/Seedance-1.0-pro">Video: Seedance 1.0 Pro</option>
+                    <option value="claude-3-opus">Writing: Claude Opus</option>
+                    <option value="perplexity/sonar-deep-research">Research: Sonar Deep Research</option>
                 </select>
             </div>
-            
-            <div class="w-10"></div> <!-- Spacer -->
-        </header>
-
-        <!-- Chat Area -->
-        <div id="chat-window" class="flex-1 overflow-y-auto p-6 space-y-8">
-            <!-- Home Screen View -->
-            <div id="home-view" class="h-full flex flex-col items-center justify-center text-center space-y-6">
-                <h1 class="text-6xl font-bold welcome-gradient">Welcome Nikhil</h1>
-                <p class="text-zinc-400 max-w-md">Your super AI agent is ready. Select a model and start a conversation.</p>
-                <div class="grid grid-cols-2 gap-4 text-xs">
-                    <div class="glass p-4 rounded-xl">Ctrl + Enter to Send</div>
-                    <div class="glass p-4 rounded-xl">Supports LaTeX & Markdown</div>
+            <div class="flex items-center gap-4">
+                <div id="status-indicator" class="flex items-center gap-2 text-[10px] text-zinc-500 font-sans uppercase tracking-widest">
+                    <span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span> Puter Connected
                 </div>
             </div>
-            <div id="message-container" class="hidden max-w-4xl mx-auto w-full space-y-8 pb-20"></div>
+        </nav>
+
+        <!-- Content Area -->
+        <div id="main-scroll" class="flex-1 overflow-y-auto custom-scrollbar">
+            
+            <!-- Home View -->
+            <div id="home-view" class="h-full flex flex-col items-center justify-center p-10 space-y-12">
+                <div class="text-center space-y-4">
+                    <h1 class="text-7xl font-bold welcome-text tracking-tighter">Welcome Nikhil</h1>
+                    <p class="text-zinc-500 text-lg max-w-xl mx-auto font-sans leading-relaxed">
+                        Noble OneAI combines the world's most powerful models into a single interface. 
+                        How can we advance your project today?
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl w-full">
+                    <div class="glass-panel p-6 rounded-2xl space-y-3 cursor-pointer hover:border-zinc-700 transition-all group">
+                        <i data-lucide="code-2" class="text-blue-400 group-hover:scale-110 transition-transform"></i>
+                        <h3 class="font-bold font-sans">Advanced Coding</h3>
+                        <p class="text-xs text-zinc-500 font-sans">Specialized logic with Claude 3.5 Sonnet.</p>
+                    </div>
+                    <div class="glass-panel p-6 rounded-2xl space-y-3 cursor-pointer hover:border-zinc-700 transition-all group">
+                        <i data-lucide="search" class="text-purple-400 group-hover:scale-110 transition-transform"></i>
+                        <h3 class="font-bold font-sans">Deep Research</h3>
+                        <p class="text-xs text-zinc-500 font-sans">Real-time web browsing via Perplexity.</p>
+                    </div>
+                    <div class="glass-panel p-6 rounded-2xl space-y-3 cursor-pointer hover:border-zinc-700 transition-all group">
+                        <i data-lucide="sparkles" class="text-yellow-400 group-hover:scale-110 transition-transform"></i>
+                        <h3 class="font-bold font-sans">Multi-Modal</h3>
+                        <p class="text-xs text-zinc-500 font-sans">Generate Pro images and Video assets.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat View -->
+            <div id="chat-view" class="hidden w-full max-w-4xl mx-auto py-12 px-6 space-y-10">
+                <!-- Messages injected here -->
+            </div>
         </div>
 
         <!-- Input Area -->
-        <div class="p-6">
-            <div class="max-w-4xl mx-auto relative glass p-2 rounded-2xl flex items-end gap-2 border-zinc-700">
-                <input type="file" id="file-upload" class="hidden" multiple onchange="handleFileUpload(event)">
-                <button onclick="document.getElementById('file-upload').click()" class="p-3 hover:bg-zinc-800 rounded-xl text-zinc-400">
-                    <i data-lucide="plus"></i>
+        <div class="p-6 bg-gradient-to-t from-[#0c0c0e] to-transparent">
+            <div id="chat-input-container" class="max-w-4xl mx-auto glass-panel rounded-2xl p-2 flex items-end gap-2 border-zinc-800">
+                <input type="file" id="file-input" class="hidden" multiple onchange="uploadFiles(this.files)">
+                <button onclick="document.getElementById('file-input').click()" class="p-4 text-zinc-500 hover:text-white transition-colors">
+                    <i data-lucide="plus" class="w-6"></i>
                 </button>
                 
-                <textarea id="chat-input" 
-                    placeholder="Type a message... (Ctrl+Enter to send)" 
-                    class="flex-1 bg-transparent border-none outline-none p-3 resize-none overflow-y-auto text-lg leading-relaxed"></textarea>
+                <textarea id="chat-input" rows="1" 
+                    class="flex-1 bg-transparent border-none outline-none p-4 text-lg font-georgia resize-none custom-scrollbar min-h-[60px]" 
+                    placeholder="Message Noble OneAI..."></textarea>
                 
-                <button id="send-btn" class="p-3 bg-white text-black hover:bg-zinc-200 rounded-xl transition-all font-bold">
-                    <i data-lucide="arrow-up"></i>
+                <button id="send-btn" class="bg-white text-black p-4 rounded-xl hover:bg-blue-100 transition-all">
+                    <i data-lucide="arrow-up" class="w-6"></i>
                 </button>
             </div>
+            <p class="text-center text-[10px] text-zinc-600 mt-4 uppercase tracking-[0.2em] font-sans">
+                Ctrl + Enter to send • Georgia/Roboto Interface Engine
+            </p>
         </div>
     </main>
 
     <script>
         // --- CONSTANTS & CONFIG ---
-        const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dgpixx6j7/auto/upload";
-        const CLOUDINARY_PRESET = "SuperAi interface";
-        const PINCODE = "392001";
-        
-        let currentChatId = null;
-        let chatHistory = [];
-        let folders = [];
-        let isProcessing = false;
+        const PIN = "392001";
+        const CLOUDINARY = {
+            url: "https://api.cloudinary.com/v1_1/dgpixx6j7/auto/upload",
+            preset: "SuperAi interface"
+        };
+        const DATA_FILE = 'noble_oneai_v3_data.json';
 
-        // --- AUTH LOGIC ---
-        function checkPin() {
-            const input = document.getElementById('pincode-input').value;
-            if(input === PINCODE) {
-                document.getElementById('auth-overlay').style.display = 'none';
-                initApp();
+        // --- STATE MANAGEMENT ---
+        let state = {
+            chats: [],
+            folders: [],
+            activeChat: null,
+            isProcessing: false
+        };
+
+        // --- INITIALIZATION ---
+        window.onload = async () => {
+            lucide.createIcons();
+            initTextarea();
+        };
+
+        async function verifyPin() {
+            if(document.getElementById('pin-input').value === PIN) {
+                document.getElementById('auth-screen').style.display = 'none';
+                await loadData();
+                renderSidebar();
             } else {
-                alert("Incorrect Pin");
+                alert("Unauthorized Access.");
             }
         }
 
-        // --- INITIALIZATION ---
-        async function initApp() {
-            lucide.createIcons();
-            // Load from Puter File System
+        async function loadData() {
             try {
-                const savedData = await puter.fs.read('noble_one_ai_data.json');
-                const parsed = JSON.parse(savedData);
-                chatHistory = parsed.chats || [];
-                folders = parsed.folders || [];
-                renderSidebar();
+                const cloudData = await puter.fs.read(DATA_FILE);
+                state = JSON.parse(cloudData);
             } catch (e) {
-                console.log("No previous data found.");
+                const localData = localStorage.getItem('noble_one_ai');
+                if(localData) state = JSON.parse(localData);
             }
+        }
+
+        async function saveData() {
+            const dataStr = JSON.stringify(state);
+            localStorage.setItem('noble_one_ai', dataStr);
+            try {
+                await puter.fs.write(DATA_FILE, dataStr);
+            } catch (e) { console.error("Cloud Sync Failed", e); }
         }
 
         // --- CHAT LOGIC ---
-        async function createNewChat() {
-            const id = Date.now().toString();
-            const newChat = { id, title: 'New Conversation', messages: [], folder: null };
-            chatHistory.unshift(newChat);
-            selectChat(id);
+        async function createNewChat(folderId = null) {
+            const newChat = {
+                id: Date.now().toString(),
+                title: "New Dialogue",
+                folderId: folderId,
+                messages: [],
+                model: document.getElementById('model-select').value,
+                timestamp: new Date().toISOString()
+            };
+            state.chats.unshift(newChat);
+            setActiveChat(newChat.id);
             saveData();
+            renderSidebar();
         }
 
-        function selectChat(id) {
-            currentChatId = id;
+        function setActiveChat(id) {
+            state.activeChat = id;
             document.getElementById('home-view').classList.add('hidden');
-            document.getElementById('message-container').classList.remove('hidden');
+            document.getElementById('chat-view').classList.remove('hidden');
             renderMessages();
             renderSidebar();
         }
 
-        async function sendMessage() {
+        async function handleSend() {
             const input = document.getElementById('chat-input');
-            const text = input.value.trim();
-            const model = document.getElementById('model-selector').value;
+            const content = input.value.trim();
+            const model = document.getElementById('model-select').value;
             
-            if(!text && !isProcessing) return;
-            if(!currentChatId) await createNewChat();
+            if(!content || state.isProcessing) return;
+            if(!state.activeChat) await createNewChat();
 
-            const chat = chatHistory.find(c => c.id === currentChatId);
-            chat.messages.push({ role: 'user', content: text, type: 'text' });
+            const chat = state.chats.find(c => c.id === state.activeChat);
             
+            // Add User Message
+            chat.messages.push({ role: 'user', content, type: 'text' });
             input.value = '';
+            input.style.height = 'auto';
             renderMessages();
             
-            isProcessing = true;
-            const responseContainer = createMessageBubble('ai', '');
-            let fullAiResponse = "";
+            state.isProcessing = true;
+            
+            // Auto Title Generation (Only for first message)
+            if(chat.messages.length === 1) {
+                generateAutoTitle(chat, content);
+            }
 
             try {
-                // Determine which Puter API to call
-                let result;
+                const aiMsgObj = { role: 'assistant', content: '', type: 'text' };
+                chat.messages.push(aiMsgObj);
+                const bubble = renderMessages(true); // Partial render to get the last bubble
+
+                let responseText = "";
+                
+                // Route to correct Puter API
                 if(model.includes('FLUX')) {
-                    result = await puter.ai.txt2img(text);
-                    const cloudRes = await uploadToCloudinary(result.src);
-                    fullAiResponse = `![Generated Image](${cloudRes})`;
+                    const res = await puter.ai.txt2img(content);
+                    const cloudUrl = await uploadToCloudinary(res.src);
+                    responseText = `![Generated Image](${cloudUrl})`;
                 } else if(model.includes('Seedance')) {
-                    result = await puter.ai.txt2vid(text);
-                    const cloudRes = await uploadToCloudinary(result.src);
-                    fullAiResponse = `Generated Video: ${cloudRes}`;
+                    const res = await puter.ai.txt2vid(content);
+                    const cloudUrl = await uploadToCloudinary(res.src);
+                    responseText = `Video Generated: \n\n <video src="${cloudUrl}" controls class="w-full rounded-xl"></video>`;
                 } else {
-                    // Standard Chat / Research / Code
-                    result = await puter.ai.chat(text, { model: model, stream: false });
-                    fullAiResponse = result.message.content;
+                    const res = await puter.ai.chat(content, { model: model });
+                    responseText = res.message.content;
                 }
 
-                // Simulated Typewriter
-                await typewriterEffect(responseContainer.querySelector('.msg-content'), fullAiResponse);
-                
-                chat.messages.push({ role: 'assistant', content: fullAiResponse });
+                await typewriter(bubble, responseText, chat);
                 saveData();
             } catch (err) {
-                responseContainer.querySelector('.msg-content').innerText = "Error: " + err.message;
+                console.error(err);
+                chat.messages[chat.messages.length-1].content = "Error connecting to engine.";
+                renderMessages();
             } finally {
-                isProcessing = false;
-                renderMessages(); // Final render for markdown/latex
+                state.isProcessing = false;
             }
         }
 
-        async function typewriterEffect(element, text) {
+        async function generateAutoTitle(chat, prompt) {
+            try {
+                const res = await puter.ai.chat(`Give me a 3 word title for a chat that starts with: "${prompt}". Return ONLY the title.`, { model: 'gpt-4o-mini' });
+                chat.title = res.message.content.replace(/"/g, '');
+                renderSidebar();
+                saveData();
+            } catch(e) {}
+        }
+
+        // --- RENDERING ---
+        function renderMessages(returnLast = false) {
+            const container = document.getElementById('chat-view');
+            container.innerHTML = '';
+            const chat = state.chats.find(c => c.id === state.activeChat);
+            if(!chat) return;
+
+            chat.messages.forEach((msg, idx) => {
+                const msgDiv = document.createElement('div');
+                msgDiv.className = `flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} message-anim`;
+                
+                const inner = `
+                    <div class="max-w-[85%] space-y-2">
+                        <div class="text-[10px] font-sans uppercase tracking-[0.2em] text-zinc-500 px-1">${msg.role}</div>
+                        <div class="p-6 rounded-2xl ${msg.role === 'user' ? 'bg-[#1a1a1e] border border-zinc-800' : 'bg-transparent'}">
+                            <div class="prose prose-invert max-w-none text-lg leading-relaxed content-area">
+                                ${marked.parse(msg.content)}
+                            </div>
+                            ${msg.role === 'assistant' ? `
+                                <div class="mt-4 flex gap-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button onclick="copyToClipboard(this)" class="text-zinc-600 hover:text-white transition-colors"><i data-lucide="copy" class="w-4"></i></button>
+                                    <button onclick="downloadAsTxt(this)" class="text-zinc-600 hover:text-white transition-colors"><i data-lucide="download" class="w-4"></i></button>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+                msgDiv.innerHTML = inner;
+                container.appendChild(msgDiv);
+            });
+
+            // Post-processing
+            document.querySelectorAll('pre code').forEach(block => {
+                block.classList.add('font-roboto');
+                hljs.highlightElement(block);
+                addCodeFeatures(block);
+            });
+            
+            lucide.createIcons();
+            container.scrollTop = container.scrollHeight;
+            return container.lastElementChild ? container.lastElementChild.querySelector('.content-area') : null;
+        }
+
+        async function typewriter(element, text, chatObj) {
             let i = 0;
-            element.innerHTML = "";
+            const speed = 2; // characters per tick
             return new Promise(resolve => {
-                const interval = setInterval(() => {
-                    element.innerHTML = marked.parse(text.substring(0, i) + " █");
-                    i += 5;
-                    if(i >= text.length) {
-                        clearInterval(interval);
+                function type() {
+                    if (i < text.length) {
+                        i += speed;
+                        element.innerHTML = marked.parse(text.substring(0, i));
+                        document.getElementById('main-scroll').scrollTop = document.getElementById('main-scroll').scrollHeight;
+                        requestAnimationFrame(type);
+                    } else {
                         element.innerHTML = marked.parse(text);
+                        chatObj.messages[chatObj.messages.length - 1].content = text;
                         resolve();
                     }
-                    document.getElementById('chat-window').scrollTop = document.getElementById('chat-window').scrollHeight;
-                }, 20);
+                }
+                type();
             });
         }
 
-        // --- MEDIA UPLOADS ---
-        async function handleFileUpload(event) {
-            const files = event.target.files;
-            if(!currentChatId) await createNewChat();
-            
-            for(let file of files) {
-                const formData = new FormData();
-                formData.append('file', file);
-                formData.append('upload_preset', CLOUDINARY_PRESET);
+        // --- SIDEBAR & FOLDERS ---
+        function renderSidebar() {
+            const container = document.getElementById('sidebar-content');
+            container.innerHTML = '';
 
-                const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData });
-                const data = await res.json();
+            // Render Folders
+            state.folders.forEach(folder => {
+                const folderDiv = document.createElement('div');
+                folderDiv.className = "space-y-1";
+                folderDiv.innerHTML = `
+                    <div class="flex items-center justify-between p-2 hover:bg-zinc-800 rounded-lg cursor-pointer group">
+                        <div class="flex items-center gap-2 text-zinc-400">
+                            <i data-lucide="folder" class="w-4"></i>
+                            <span class="font-bold">${folder.name}</span>
+                        </div>
+                        <div class="hidden group-hover:flex gap-1">
+                            <button onclick="deleteFolder('${folder.id}')" class="p-1 hover:text-red-400"><i data-lucide="trash-2" class="w-3"></i></button>
+                        </div>
+                    </div>
+                    <div class="folder-content" id="folder-${folder.id}"></div>
+                `;
+                container.appendChild(folderDiv);
                 
-                const chat = chatHistory.find(c => c.id === currentChatId);
-                let content = data.secure_url;
-                let type = file.type.split('/')[0];
-                
-                chat.messages.push({ role: 'user', content: content, type: type, fileName: file.name });
-            }
-            renderMessages();
-            saveData();
+                const folderContents = container.querySelector(`#folder-${folder.id}`);
+                state.chats.filter(c => c.folderId === folder.id).forEach(chat => {
+                    folderContents.appendChild(createChatItem(chat));
+                });
+            });
+
+            // Render Uncategorized Chats
+            const uncatTitle = document.createElement('div');
+            uncatTitle.className = "text-[10px] text-zinc-600 uppercase tracking-widest mt-6 mb-2 px-2";
+            uncatTitle.innerText = "Recent Conversations";
+            container.appendChild(uncatTitle);
+
+            state.chats.filter(c => !c.folderId).forEach(chat => {
+                container.appendChild(createChatItem(chat));
+            });
+
+            lucide.createIcons();
         }
 
-        async function uploadToCloudinary(blobUrl) {
-            const blob = await fetch(blobUrl).then(r => r.blob());
+        function createChatItem(chat) {
+            const div = document.createElement('div');
+            div.className = `sidebar-item p-3 flex items-center justify-between cursor-pointer group ${state.activeChat === chat.id ? 'active-chat' : ''}`;
+            div.onclick = () => setActiveChat(chat.id);
+            div.innerHTML = `
+                <div class="flex items-center gap-3 overflow-hidden">
+                    <i data-lucide="message-square" class="w-4 shrink-0 text-zinc-500"></i>
+                    <span class="truncate">${chat.title}</span>
+                </div>
+                <div class="hidden group-hover:flex gap-2 text-zinc-500">
+                    <button onclick="event.stopPropagation(); moveToFolderPrompt('${chat.id}')"><i data-lucide="folder-input" class="w-3"></i></button>
+                    <button onclick="event.stopPropagation(); deleteChat('${chat.id}')"><i data-lucide="trash" class="w-3"></i></button>
+                </div>
+            `;
+            return div;
+        }
+
+        // --- UTILITIES ---
+        function createFolder() {
+            const name = prompt("Folder Name:");
+            if(name) {
+                state.folders.push({ id: Date.now().toString(), name });
+                saveData();
+                renderSidebar();
+            }
+        }
+
+        function moveToFolderPrompt(chatId) {
+            if(state.folders.length === 0) return alert("Create a folder first!");
+            const folderNames = state.folders.map((f, i) => `${i}: ${f.name}`).join('\n');
+            const choice = prompt(`Select Folder Index:\n${folderNames}`);
+            if(choice !== null && state.folders[choice]) {
+                const chat = state.chats.find(c => c.id === chatId);
+                chat.folderId = state.folders[choice].id;
+                saveData();
+                renderSidebar();
+            }
+        }
+
+        async function uploadToCloudinary(fileSource) {
+            // fileSource can be a Blob URL from Puter or a File object
+            let blob = fileSource;
+            if(typeof fileSource === 'string' && fileSource.startsWith('blob:')) {
+                blob = await fetch(fileSource).then(r => r.blob());
+            }
+
             const formData = new FormData();
             formData.append('file', blob);
-            formData.append('upload_preset', CLOUDINARY_PRESET);
-            const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData });
+            formData.append('upload_preset', CLOUDINARY.preset);
+
+            const res = await fetch(CLOUDINARY.url, { method: 'POST', body: formData });
             const data = await res.json();
             return data.secure_url;
         }
 
-        // --- UI RENDERING ---
-        function renderMessages() {
-            const container = document.getElementById('message-container');
-            container.innerHTML = '';
-            const chat = chatHistory.find(c => c.id === currentChatId);
-            if(!chat) return;
+        async function uploadFiles(files) {
+            if(!state.activeChat) await createNewChat();
+            const chat = state.chats.find(c => c.id === state.activeChat);
 
-            chat.messages.forEach(msg => {
-                const bubble = createMessageBubble(msg.role, msg.content, msg.type, msg.fileName);
-                container.appendChild(bubble);
-            });
-            
-            // Re-highlight code
-            document.querySelectorAll('pre code').forEach((el) => {
-                el.classList.add('font-roboto');
-                hljs.highlightElement(el);
-                addCodeControls(el);
-            });
-            // Render Math
-            renderMathInElement(container);
-            
-            document.getElementById('chat-window').scrollTop = document.getElementById('chat-window').scrollHeight;
-        }
-
-        function createMessageBubble(role, content, type = 'text', fileName = '') {
-            const div = document.createElement('div');
-            div.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in duration-500`;
-            
-            let innerHTML = '';
-            if(type === 'image') innerHTML = `<img src="${content}" class="max-w-md rounded-lg border border-zinc-700 shadow-xl">`;
-            else if(type === 'video') innerHTML = `<video src="${content}" controls class="max-w-md rounded-lg border border-zinc-700"></video>`;
-            else if(type === 'audio') innerHTML = `<audio src="${content}" controls class="w-full"></audio>`;
-            else innerHTML = `<div class="msg-content prose prose-invert max-w-none">${marked.parse(content)}</div>`;
-
-            div.innerHTML = `
-                <div class="max-w-[85%] p-4 rounded-2xl ${role === 'user' ? 'glass border-blue-900/30 text-zinc-200' : 'bg-transparent text-zinc-100'}">
-                    <div class="text-[10px] uppercase tracking-widest text-zinc-500 mb-2 font-sans">${role}</div>
-                    ${innerHTML}
-                    ${role === 'assistant' ? `
-                        <div class="mt-4 flex gap-2">
-                            <button onclick="copyToClipboard('${content.replace(/'/g, "\\'")}')" class="p-1 hover:text-white text-zinc-500 transition"><i data-lucide="copy" class="w-4"></i></button>
-                            <button onclick="downloadContent('${content.replace(/'/g, "\\'")}')" class="p-1 hover:text-white text-zinc-500 transition"><i data-lucide="download" class="w-4"></i></button>
-                        </div>
-                    ` : ''}
-                </div>
-            `;
-            document.getElementById('message-container').appendChild(div);
-            lucide.createIcons();
-            return div;
-        }
-
-        function addCodeControls(codeEl) {
-            const pre = codeEl.parentElement;
-            pre.className = "code-container rounded-xl overflow-hidden my-4";
-            const btn = document.createElement('button');
-            btn.className = "copy-btn bg-zinc-800 text-xs px-2 py-1 rounded border border-zinc-600 hover:bg-zinc-700";
-            btn.innerText = "Copy";
-            btn.onclick = () => {
-                navigator.clipboard.writeText(codeEl.innerText);
-                btn.innerText = "Copied!";
-                setTimeout(() => btn.innerText = "Copy", 2000);
-            };
-            pre.appendChild(btn);
-        }
-
-        function renderSidebar() {
-            const cont = document.getElementById('chats-container');
-            cont.innerHTML = '';
-            chatHistory.forEach(chat => {
-                const item = document.createElement('div');
-                item.className = `group flex items-center justify-between p-2 rounded-lg cursor-pointer hover:bg-zinc-800 transition ${currentChatId === chat.id ? 'bg-zinc-800 ring-1 ring-zinc-700' : ''}`;
-                item.onclick = () => selectChat(chat.id);
-                item.innerHTML = `
-                    <div class="flex items-center gap-2 overflow-hidden">
-                        <i data-lucide="message-square" class="w-4 shrink-0 text-zinc-500"></i>
-                        <span class="text-sm truncate font-sans">${chat.title}</span>
-                    </div>
-                    <div class="hidden group-hover:flex gap-1">
-                        <button onclick="renameChat('${chat.id}', event)" class="p-1 hover:text-white text-zinc-500"><i data-lucide="edit-3" class="w-3"></i></button>
-                        <button onclick="deleteChat('${chat.id}', event)" class="p-1 hover:text-red-400 text-zinc-500"><i data-lucide="trash" class="w-3"></i></button>
-                    </div>
-                `;
-                cont.appendChild(item);
-            });
-            lucide.createIcons();
-        }
-
-        // --- UTILS ---
-        function toggleSidebar() {
-            const sb = document.getElementById('sidebar');
-            sb.style.width = sb.style.width === '0px' ? '288px' : '0px';
-        }
-
-        async function saveData() {
-            const data = JSON.stringify({ chats: chatHistory, folders: folders });
-            await puter.fs.write('noble_one_ai_data.json', data);
-        }
-
-        function copyToClipboard(text) {
-            navigator.clipboard.writeText(text);
-        }
-
-        function downloadContent(content) {
-            const blob = new Blob([content], { type: 'text/plain' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `noble-ai-export-${Date.now()}.txt`;
-            a.click();
-        }
-
-        function deleteChat(id, e) {
-            e.stopPropagation();
-            chatHistory = chatHistory.filter(c => c.id !== id);
-            if(currentChatId === id) {
-                currentChatId = null;
-                document.getElementById('home-view').classList.remove('hidden');
-                document.getElementById('message-container').classList.add('hidden');
+            for(let file of files) {
+                const url = await uploadToCloudinary(file);
+                const type = file.type.startsWith('image') ? 'image' : (file.type.startsWith('video') ? 'video' : 'file');
+                
+                let content = url;
+                if(type === 'image') content = `![${file.name}](${url})`;
+                if(type === 'video') content = `Video: ${url}`;
+                
+                chat.messages.push({ role: 'user', content, type: type });
             }
-            renderSidebar();
+            renderMessages();
             saveData();
         }
 
-        function renameChat(id, e) {
-            e.stopPropagation();
-            const newTitle = prompt("Enter new title:");
-            if(newTitle) {
-                const chat = chatHistory.find(c => c.id === id);
-                chat.title = newTitle;
-                renderSidebar();
-                saveData();
-            }
+        function deleteChat(id) {
+            state.chats = state.chats.filter(c => c.id !== id);
+            if(state.activeChat === id) state.activeChat = null;
+            saveData();
+            renderSidebar();
+            if(!state.activeChat) location.reload();
         }
 
-        // --- EVENT LISTENERS ---
-        document.getElementById('chat-input').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && e.ctrlKey) {
-                e.preventDefault();
-                sendMessage();
-            }
-        });
-
-        document.getElementById('send-btn').onclick = sendMessage;
-
-        // LaTeX Support Logic
-        function renderMathInElement(el) {
-            const text = el.innerHTML;
-            // Simplified Regex for math detection
-            const mathRegex = /\$\$([\s\S]+?)\$\$/g;
-            el.innerHTML = text.replace(mathRegex, (match, p1) => {
-                try { return katex.renderToString(p1, { displayMode: true }); }
-                catch(e) { return match; }
+        function initTextarea() {
+            const area = document.getElementById('chat-input');
+            area.addEventListener('input', () => {
+                area.style.height = 'auto';
+                area.style.height = (area.scrollHeight) + 'px';
             });
+            area.addEventListener('keydown', (e) => {
+                if(e.key === 'Enter' && e.ctrlKey) {
+                    e.preventDefault();
+                    handleSend();
+                }
+            });
+            document.getElementById('send-btn').onclick = handleSend;
+        }
+
+        function addCodeFeatures(code) {
+            const pre = code.parentElement;
+            const header = document.createElement('div');
+            header.className = "code-header";
+            header.innerHTML = `
+                <button onclick="copyRaw(this)" class="bg-zinc-800 p-1 px-2 rounded text-[10px] hover:bg-zinc-700 transition-colors font-sans">COPY</button>
+                <button onclick="downloadRaw(this)" class="bg-zinc-800 p-1 px-2 rounded text-[10px] hover:bg-zinc-700 transition-colors font-sans">SAVE</button>
+            `;
+            pre.appendChild(header);
+        }
+
+        window.copyRaw = (btn) => {
+            const code = btn.closest('pre').querySelector('code').innerText;
+            navigator.clipboard.writeText(code);
+            btn.innerText = "COPIED";
+            setTimeout(() => btn.innerText = "COPY", 2000);
+        };
+
+        window.downloadRaw = (btn) => {
+            const code = btn.closest('pre').querySelector('code').innerText;
+            const blob = new Blob([code], {type: 'text/plain'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "noble_code_export.txt";
+            a.click();
+        };
+
+        function toggleSidebar() {
+            const s = document.getElementById('sidebar');
+            s.style.display = s.style.display === 'none' ? 'flex' : 'none';
         }
     </script>
 </body>
