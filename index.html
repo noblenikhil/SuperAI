@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Noble OneAI</title>
+    <script src="https://js.puter.com/v2/"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono&display=swap" rel="stylesheet">
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Markdown & Latex -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <!-- Highlight.js -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/tokyo-night-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+
+    <style>
+        body { background-color: #09090b; color: #e4e4e7; font-family: 'Georgia', serif; }
+        .font-georgia { font-family: 'Georgia', serif; }
+        .font-roboto { font-family: 'Roboto Mono', monospace; }
+        
+        /* Glassmorphism */
+        .glass {
+            background: rgba(24, 24, 27, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .welcome-gradient {
+            background: linear-gradient(135deg, #60a5fa, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 10px rgba(192, 132, 252, 0.3));
+        }
+
+        /* Sidebar Scrollbar */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 10px; }
+
+        /* Textbox Styling */
+        #chat-input {
+            min-height: 80px;
+            max-height: 400px;
+        }
+
+        /* Code Block Copy Button */
+        .code-container { position: relative; }
+        .copy-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .code-container:hover .copy-btn { opacity: 1; }
+
+        #auth-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: #09090b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body class="h-screen flex overflow-hidden">
+
+    <!-- Auth Overlay -->
+    <div id="auth-overlay">
+        <div class="glass p-8 rounded-2xl w-80 text-center space-y-4">
+            <h2 class="text-2xl font-bold mb-4">Noble OneAI</h2>
+            <input type="password" id="pincode-input" placeholder="Enter PIN" class="w-full bg-zinc-900 border border-zinc-700 p-3 rounded-lg text-center outline-none focus:border-blue-500">
+            <button onclick="checkPin()" class="w-full bg-blue-600 hover:bg-blue-700 p-2 rounded-lg transition">Enter</button>
+            <button onclick="alert('Hint: 6-digit PIN starts with 39...')" class="text-xs text-zinc-500 underline">pincode hint</button>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="w-72 glass h-full flex flex-col transition-all duration-300 relative shrink-0">
+        <div class="p-4 border-b border-zinc-800 flex justify-between items-center">
+            <h1 class="text-xl font-bold welcome-gradient">Noble OneAI</h1>
+            <button onclick="createNewChat()" class="p-1.5 hover:bg-zinc-800 rounded-lg"><i data-lucide="plus-circle"></i></button>
+        </div>
+        
+        <!-- Folder/Chat Management -->
+        <div id="chat-library" class="flex-1 overflow-y-auto p-4 space-y-2">
+            <div id="folders-container"></div>
+            <div id="chats-container"></div>
+        </div>
+
+        <div class="p-4 border-t border-zinc-800 text-xs text-zinc-500">
+            Puter.js Integrated System
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col relative h-full">
+        <!-- Top Bar -->
+        <header class="glass h-16 flex items-center justify-between px-6 z-10">
+            <button onclick="toggleSidebar()" class="p-2 hover:bg-zinc-800 rounded-lg">
+                <i data-lucide="menu"></i>
+            </button>
+            
+            <div class="flex items-center gap-4">
+                <select id="model-selector" class="bg-zinc-900 border border-zinc-700 text-sm p-2 rounded-lg outline-none focus:ring-1 ring-blue-500">
+                    <option value="google/gemini-1.5-pro-preview-0514" selected>Normal Chat (Gemini Pro)</option>
+                    <option value="claude-3-5-sonnet">Code Generation (Claude 3.5)</option>
+                    <option value="black-forest-labs/FLUX.1-pro">Image Gen (FLUX.1.1)</option>
+                    <option value="ByteDance/Seedance-1.0-pro">Video Gen (Seedance)</option>
+                    <option value="claude-3-opus">Creative Writing (Opus)</option>
+                    <option value="perplexity/sonar-deep-research">Scientific Research (Perplexity)</option>
+                    <option value="gpt-4o-transcribe-diarize">Transcribe (Speech to Text)</option>
+                </select>
+            </div>
+            
+            <div class="w-10"></div> <!-- Spacer -->
+        </header>
+
+        <!-- Chat Area -->
+        <div id="chat-window" class="flex-1 overflow-y-auto p-6 space-y-8">
+            <!-- Home Screen View -->
+            <div id="home-view" class="h-full flex flex-col items-center justify-center text-center space-y-6">
+                <h1 class="text-6xl font-bold welcome-gradient">Welcome Nikhil</h1>
+                <p class="text-zinc-400 max-w-md">Your super AI agent is ready. Select a model and start a conversation.</p>
+                <div class="grid grid-cols-2 gap-4 text-xs">
+                    <div class="glass p-4 rounded-xl">Ctrl + Enter to Send</div>
+                    <div class="glass p-4 rounded-xl">Supports LaTeX & Markdown</div>
+                </div>
+            </div>
+            <div id="message-container" class="hidden max-w-4xl mx-auto w-full space-y-8 pb-20"></div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="p-6">
+            <div class="max-w-4xl mx-auto relative glass p-2 rounded-2xl flex items-end gap-2 border-zinc-700">
+                <input type="file" id="file-upload" class="hidden" multiple onchange="handleFileUpload(event)">
+                <button onclick="document.getElementById('file-upload').click()" class="p-3 hover:bg-zinc-800 rounded-xl text-zinc-400">
+                    <i data-lucide="plus"></i>
+                </button>
+                
+                <textarea id="chat-input" 
+                    placeholder="Type a message... (Ctrl+Enter to send)" 
+                    class="flex-1 bg-transparent border-none outline-none p-3 resize-none overflow-y-auto text-lg leading-relaxed"></textarea>
+                
+                <button id="send-btn" class="p-3 bg-white text-black hover:bg-zinc-200 rounded-xl transition-all font-bold">
+                    <i data-lucide="arrow-up"></i>
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // --- CONSTANTS & CONFIG ---
+        const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dgpixx6j7/auto/upload";
+        const CLOUDINARY_PRESET = "SuperAi interface";
+        const PINCODE = "392001";
+        
+        let currentChatId = null;
+        let chatHistory = [];
+        let folders = [];
+        let isProcessing = false;
+
+        // --- AUTH LOGIC ---
+        function checkPin() {
+            const input = document.getElementById('pincode-input').value;
+            if(input === PINCODE) {
+                document.getElementById('auth-overlay').style.display = 'none';
+                initApp();
+            } else {
+                alert("Incorrect Pin");
+            }
+        }
+
+        // --- INITIALIZATION ---
+        async function initApp() {
+            lucide.createIcons();
+            // Load from Puter File System
+            try {
+                const savedData = await puter.fs.read('noble_one_ai_data.json');
+                const parsed = JSON.parse(savedData);
+                chatHistory = parsed.chats || [];
+                folders = parsed.folders || [];
+                renderSidebar();
+            } catch (e) {
+                console.log("No previous data found.");
+            }
+        }
+
+        // --- CHAT LOGIC ---
+        async function createNewChat() {
+            const id = Date.now().toString();
+            const newChat = { id, title: 'New Conversation', messages: [], folder: null };
+            chatHistory.unshift(newChat);
+            selectChat(id);
+            saveData();
+        }
+
+        function selectChat(id) {
+            currentChatId = id;
+            document.getElementById('home-view').classList.add('hidden');
+            document.getElementById('message-container').classList.remove('hidden');
+            renderMessages();
+            renderSidebar();
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            const model = document.getElementById('model-selector').value;
+            
+            if(!text && !isProcessing) return;
+            if(!currentChatId) await createNewChat();
+
+            const chat = chatHistory.find(c => c.id === currentChatId);
+            chat.messages.push({ role: 'user', content: text, type: 'text' });
+            
+            input.value = '';
+            renderMessages();
+            
+            isProcessing = true;
+            const responseContainer = createMessageBubble('ai', '');
+            let fullAiResponse = "";
+
+            try {
+                // Determine which Puter API to call
+                let result;
+                if(model.includes('FLUX')) {
+                    result = await puter.ai.txt2img(text);
+                    const cloudRes = await uploadToCloudinary(result.src);
+                    fullAiResponse = `![Generated Image](${cloudRes})`;
+                } else if(model.includes('Seedance')) {
+                    result = await puter.ai.txt2vid(text);
+                    const cloudRes = await uploadToCloudinary(result.src);
+                    fullAiResponse = `Generated Video: ${cloudRes}`;
+                } else {
+                    // Standard Chat / Research / Code
+                    result = await puter.ai.chat(text, { model: model, stream: false });
+                    fullAiResponse = result.message.content;
+                }
+
+                // Simulated Typewriter
+                await typewriterEffect(responseContainer.querySelector('.msg-content'), fullAiResponse);
+                
+                chat.messages.push({ role: 'assistant', content: fullAiResponse });
+                saveData();
+            } catch (err) {
+                responseContainer.querySelector('.msg-content').innerText = "Error: " + err.message;
+            } finally {
+                isProcessing = false;
+                renderMessages(); // Final render for markdown/latex
+            }
+        }
+
+        async function typewriterEffect(element, text) {
+            let i = 0;
+            element.innerHTML = "";
+            return new Promise(resolve => {
+                const interval = setInterval(() => {
+                    element.innerHTML = marked.parse(text.substring(0, i) + " █");
+                    i += 5;
+                    if(i >= text.length) {
+                        clearInterval(interval);
+                        element.innerHTML = marked.parse(text);
+                        resolve();
+                    }
+                    document.getElementById('chat-window').scrollTop = document.getElementById('chat-window').scrollHeight;
+                }, 20);
+            });
+        }
+
+        // --- MEDIA UPLOADS ---
+        async function handleFileUpload(event) {
+            const files = event.target.files;
+            if(!currentChatId) await createNewChat();
+            
+            for(let file of files) {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('upload_preset', CLOUDINARY_PRESET);
+
+                const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData });
+                const data = await res.json();
+                
+                const chat = chatHistory.find(c => c.id === currentChatId);
+                let content = data.secure_url;
+                let type = file.type.split('/')[0];
+                
+                chat.messages.push({ role: 'user', content: content, type: type, fileName: file.name });
+            }
+            renderMessages();
+            saveData();
+        }
+
+        async function uploadToCloudinary(blobUrl) {
+            const blob = await fetch(blobUrl).then(r => r.blob());
+            const formData = new FormData();
+            formData.append('file', blob);
+            formData.append('upload_preset', CLOUDINARY_PRESET);
+            const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData });
+            const data = await res.json();
+            return data.secure_url;
+        }
+
+        // --- UI RENDERING ---
+        function renderMessages() {
+            const container = document.getElementById('message-container');
+            container.innerHTML = '';
+            const chat = chatHistory.find(c => c.id === currentChatId);
+            if(!chat) return;
+
+            chat.messages.forEach(msg => {
+                const bubble = createMessageBubble(msg.role, msg.content, msg.type, msg.fileName);
+                container.appendChild(bubble);
+            });
+            
+            // Re-highlight code
+            document.querySelectorAll('pre code').forEach((el) => {
+                el.classList.add('font-roboto');
+                hljs.highlightElement(el);
+                addCodeControls(el);
+            });
+            // Render Math
+            renderMathInElement(container);
+            
+            document.getElementById('chat-window').scrollTop = document.getElementById('chat-window').scrollHeight;
+        }
+
+        function createMessageBubble(role, content, type = 'text', fileName = '') {
+            const div = document.createElement('div');
+            div.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in duration-500`;
+            
+            let innerHTML = '';
+            if(type === 'image') innerHTML = `<img src="${content}" class="max-w-md rounded-lg border border-zinc-700 shadow-xl">`;
+            else if(type === 'video') innerHTML = `<video src="${content}" controls class="max-w-md rounded-lg border border-zinc-700"></video>`;
+            else if(type === 'audio') innerHTML = `<audio src="${content}" controls class="w-full"></audio>`;
+            else innerHTML = `<div class="msg-content prose prose-invert max-w-none">${marked.parse(content)}</div>`;
+
+            div.innerHTML = `
+                <div class="max-w-[85%] p-4 rounded-2xl ${role === 'user' ? 'glass border-blue-900/30 text-zinc-200' : 'bg-transparent text-zinc-100'}">
+                    <div class="text-[10px] uppercase tracking-widest text-zinc-500 mb-2 font-sans">${role}</div>
+                    ${innerHTML}
+                    ${role === 'assistant' ? `
+                        <div class="mt-4 flex gap-2">
+                            <button onclick="copyToClipboard('${content.replace(/'/g, "\\'")}')" class="p-1 hover:text-white text-zinc-500 transition"><i data-lucide="copy" class="w-4"></i></button>
+                            <button onclick="downloadContent('${content.replace(/'/g, "\\'")}')" class="p-1 hover:text-white text-zinc-500 transition"><i data-lucide="download" class="w-4"></i></button>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            document.getElementById('message-container').appendChild(div);
+            lucide.createIcons();
+            return div;
+        }
+
+        function addCodeControls(codeEl) {
+            const pre = codeEl.parentElement;
+            pre.className = "code-container rounded-xl overflow-hidden my-4";
+            const btn = document.createElement('button');
+            btn.className = "copy-btn bg-zinc-800 text-xs px-2 py-1 rounded border border-zinc-600 hover:bg-zinc-700";
+            btn.innerText = "Copy";
+            btn.onclick = () => {
+                navigator.clipboard.writeText(codeEl.innerText);
+                btn.innerText = "Copied!";
+                setTimeout(() => btn.innerText = "Copy", 2000);
+            };
+            pre.appendChild(btn);
+        }
+
+        function renderSidebar() {
+            const cont = document.getElementById('chats-container');
+            cont.innerHTML = '';
+            chatHistory.forEach(chat => {
+                const item = document.createElement('div');
+                item.className = `group flex items-center justify-between p-2 rounded-lg cursor-pointer hover:bg-zinc-800 transition ${currentChatId === chat.id ? 'bg-zinc-800 ring-1 ring-zinc-700' : ''}`;
+                item.onclick = () => selectChat(chat.id);
+                item.innerHTML = `
+                    <div class="flex items-center gap-2 overflow-hidden">
+                        <i data-lucide="message-square" class="w-4 shrink-0 text-zinc-500"></i>
+                        <span class="text-sm truncate font-sans">${chat.title}</span>
+                    </div>
+                    <div class="hidden group-hover:flex gap-1">
+                        <button onclick="renameChat('${chat.id}', event)" class="p-1 hover:text-white text-zinc-500"><i data-lucide="edit-3" class="w-3"></i></button>
+                        <button onclick="deleteChat('${chat.id}', event)" class="p-1 hover:text-red-400 text-zinc-500"><i data-lucide="trash" class="w-3"></i></button>
+                    </div>
+                `;
+                cont.appendChild(item);
+            });
+            lucide.createIcons();
+        }
+
+        // --- UTILS ---
+        function toggleSidebar() {
+            const sb = document.getElementById('sidebar');
+            sb.style.width = sb.style.width === '0px' ? '288px' : '0px';
+        }
+
+        async function saveData() {
+            const data = JSON.stringify({ chats: chatHistory, folders: folders });
+            await puter.fs.write('noble_one_ai_data.json', data);
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text);
+        }
+
+        function downloadContent(content) {
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `noble-ai-export-${Date.now()}.txt`;
+            a.click();
+        }
+
+        function deleteChat(id, e) {
+            e.stopPropagation();
+            chatHistory = chatHistory.filter(c => c.id !== id);
+            if(currentChatId === id) {
+                currentChatId = null;
+                document.getElementById('home-view').classList.remove('hidden');
+                document.getElementById('message-container').classList.add('hidden');
+            }
+            renderSidebar();
+            saveData();
+        }
+
+        function renameChat(id, e) {
+            e.stopPropagation();
+            const newTitle = prompt("Enter new title:");
+            if(newTitle) {
+                const chat = chatHistory.find(c => c.id === id);
+                chat.title = newTitle;
+                renderSidebar();
+                saveData();
+            }
+        }
+
+        // --- EVENT LISTENERS ---
+        document.getElementById('chat-input').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        document.getElementById('send-btn').onclick = sendMessage;
+
+        // LaTeX Support Logic
+        function renderMathInElement(el) {
+            const text = el.innerHTML;
+            // Simplified Regex for math detection
+            const mathRegex = /\$\$([\s\S]+?)\$\$/g;
+            el.innerHTML = text.replace(mathRegex, (match, p1) => {
+                try { return katex.renderToString(p1, { displayMode: true }); }
+                catch(e) { return match; }
+            });
+        }
+    </script>
+</body>
+</html>
